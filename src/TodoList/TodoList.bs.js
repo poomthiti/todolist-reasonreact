@@ -29,23 +29,20 @@ var initialState = [
   {
     id: 1,
     title: "Tester",
-    completed: false,
-    editing: false
+    completed: false
   },
   {
     id: 2,
-    title: "OH WOWO",
-    completed: true,
-    editing: false
+    title: "Reason Intro",
+    completed: false
   }
 ];
 
-function newTodo(id) {
+function newTodo(id, text) {
   return {
           id: id,
-          title: "",
-          completed: false,
-          editing: true
+          title: text,
+          completed: false
         };
 }
 
@@ -55,8 +52,7 @@ function check(id, todos) {
                   return {
                           id: el.id,
                           title: el.title,
-                          completed: !el.completed,
-                          editing: el.editing
+                          completed: !el.completed
                         };
                 } else {
                   return el;
@@ -70,49 +66,43 @@ function $$delete(id, todos) {
               }));
 }
 
-function edit(id, todos) {
-  return Belt_Array.map(todos, (function (el) {
-                if (el.id === id) {
-                  return {
-                          id: el.id,
-                          title: el.title,
-                          completed: el.completed,
-                          editing: !el.editing
-                        };
-                } else {
-                  return el;
-                }
-              }));
-}
-
-function confirm(id, text, todos) {
-  return Belt_Array.map(todos, (function (el) {
-                if (el.id === id) {
-                  return {
-                          id: el.id,
-                          title: text,
-                          completed: el.completed,
-                          editing: false
-                        };
-                } else {
-                  return el;
-                }
-              }));
-}
+var lastId = {
+  contents: 2
+};
 
 function reducer(state, action) {
-  if (typeof action === "number") {
-    return state.concat([newTodo(state.length + 1 | 0)]);
-  }
   switch (action.TAG | 0) {
-    case /* Check */0 :
+    case /* Add */0 :
+        var text = action._1;
+        var id = action._0;
+        var noteIndex = Belt_Array.getIndexBy(state, (function (el) {
+                return el.id === id;
+              }));
+        if (noteIndex !== undefined) {
+          console.log(lastId.contents);
+          return Belt_Array.map(state, (function (el) {
+                        if (el.id === id) {
+                          return {
+                                  id: el.id,
+                                  title: text,
+                                  completed: el.completed
+                                };
+                        } else {
+                          return el;
+                        }
+                      }));
+        } else {
+          lastId.contents = lastId.contents + 1 | 0;
+          return state.concat([{
+                        id: lastId.contents,
+                        title: text,
+                        completed: false
+                      }]);
+        }
+    case /* Check */1 :
         return check(action._0, state);
-    case /* Delete */1 :
+    case /* Delete */2 :
         return $$delete(action._0, state);
-    case /* Edit */2 :
-        return edit(action._0, state);
-    case /* Confirm */3 :
-        return confirm(action._0, action._1, state);
     
   }
 }
@@ -120,7 +110,7 @@ function reducer(state, action) {
 function TodoList$Input(Props) {
   var onSubmit = Props.onSubmit;
   var title = Props.title;
-  var match = React.useReducer((function (oldText, newText) {
+  var match = React.useReducer((function (param, newText) {
           return newText;
         }), title);
   var setText = match[1];
@@ -145,56 +135,86 @@ var Input = {
   make: TodoList$Input
 };
 
+function TodoList$ListItem(Props) {
+  var item = Props.item;
+  var addItem = Props.addItem;
+  var onCheck = Props.onCheck;
+  var onDelete = Props.onDelete;
+  var match = React.useReducer((function (state, action) {
+          return !state;
+        }), false);
+  var setOpenInput = match[1];
+  var openInput = match[0];
+  return React.createElement("div", {
+              style: rowStyle
+            }, React.createElement("div", undefined, openInput ? React.createElement(TodoList$Input, {
+                        onSubmit: (function (text) {
+                            Curry._1(addItem, text);
+                            return Curry._1(setOpenInput, /* Toggle */0);
+                          }),
+                        title: item.title
+                      }) : React.createElement(React.Fragment, undefined, React.createElement("input", {
+                            defaultChecked: item.completed,
+                            type: "checkbox",
+                            onClick: (function (_event) {
+                                return Curry._1(onCheck, undefined);
+                              })
+                          }), item.title)), React.createElement("div", undefined, React.createElement("button", {
+                      style: openInput ? ({
+                            color: "lightgrey"
+                          }) : ({}),
+                      disabled: openInput,
+                      onClick: (function (_event) {
+                          return Curry._1(setOpenInput, /* Toggle */0);
+                        })
+                    }, "Edit"), React.createElement("button", {
+                      onClick: (function (_event) {
+                          return Curry._1(onDelete, undefined);
+                        })
+                    }, "Delete")));
+}
+
+var ListItem = {
+  make: TodoList$ListItem
+};
+
 function TodoList(Props) {
   var match = React.useReducer(reducer, initialState);
   var dispatch = match[1];
   return React.createElement("div", {
               style: containerStyle
-            }, Belt_Array.map(match[0], (function (el) {
-                    return React.createElement("div", {
-                                key: el.id.toString(),
-                                style: rowStyle
-                              }, React.createElement("div", undefined, el.editing ? React.createElement(TodoList$Input, {
-                                          onSubmit: (function (text) {
-                                              return Curry._1(dispatch, {
-                                                          TAG: /* Confirm */3,
-                                                          _0: el.id,
-                                                          _1: text
-                                                        });
-                                            }),
-                                          title: el.title
-                                        }) : React.createElement(React.Fragment, undefined, React.createElement("input", {
-                                              defaultChecked: el.completed,
-                                              type: "checkbox",
-                                              onClick: (function (_event) {
-                                                  return Curry._1(dispatch, {
-                                                              TAG: /* Check */0,
-                                                              _0: el.id
-                                                            });
-                                                })
-                                            }), el.title)), React.createElement("div", undefined, React.createElement("button", {
-                                        style: el.editing ? ({
-                                              color: "lightgrey"
-                                            }) : ({}),
-                                        disabled: el.editing,
-                                        onClick: (function (_event) {
-                                            return Curry._1(dispatch, {
-                                                        TAG: /* Edit */2,
-                                                        _0: el.id
-                                                      });
-                                          })
-                                      }, "Edit"), React.createElement("button", {
-                                        onClick: (function (_event) {
-                                            return Curry._1(dispatch, {
-                                                        TAG: /* Delete */1,
-                                                        _0: el.id
-                                                      });
-                                          })
-                                      }, "Delete")));
+            }, Belt_Array.map(match[0], (function (item) {
+                    return React.createElement(TodoList$ListItem, {
+                                item: item,
+                                addItem: (function (text) {
+                                    return Curry._1(dispatch, {
+                                                TAG: /* Add */0,
+                                                _0: item.id,
+                                                _1: text
+                                              });
+                                  }),
+                                onCheck: (function (param) {
+                                    return Curry._1(dispatch, {
+                                                TAG: /* Check */1,
+                                                _0: item.id
+                                              });
+                                  }),
+                                onDelete: (function (param) {
+                                    return Curry._1(dispatch, {
+                                                TAG: /* Delete */2,
+                                                _0: item.id
+                                              });
+                                  }),
+                                key: item.id.toString()
+                              });
                   })), React.createElement("button", {
                   style: addButtonStyle,
                   onClick: (function (_event) {
-                      return Curry._1(dispatch, /* Add */0);
+                      return Curry._1(dispatch, {
+                                  TAG: /* Add */0,
+                                  _0: lastId.contents + 1 | 0,
+                                  _1: ""
+                                });
                     })
                 }, "+ Add new note"));
 }
@@ -208,9 +228,9 @@ exports.initialState = initialState;
 exports.newTodo = newTodo;
 exports.check = check;
 exports.$$delete = $$delete;
-exports.edit = edit;
-exports.confirm = confirm;
+exports.lastId = lastId;
 exports.reducer = reducer;
 exports.Input = Input;
+exports.ListItem = ListItem;
 exports.make = make;
 /* react Not a pure module */

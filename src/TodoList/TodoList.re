@@ -52,9 +52,8 @@ let reducer = (state, action) => {
   | Add(id, text) =>
     let noteIndex = state->Belt.Array.getIndexBy(el => el.id === id);
     switch (noteIndex) {
-    | Some(int) =>
-      Js.log(lastId^);
-      state->Belt.Array.map(el => el.id === id ? {...el, title: text} : el);
+    | Some(_) =>
+      state->Belt.Array.map(el => el.id === id ? {...el, title: text} : el)
     | None =>
       lastId := lastId^ + 1;
       Js_array2.concat(state, [|newTodo(lastId^, text)|]);

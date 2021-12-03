@@ -79,7 +79,6 @@ function reducer(state, action) {
                 return el.id === id;
               }));
         if (noteIndex !== undefined) {
-          console.log(lastId.contents);
           return Belt_Array.map(state, (function (el) {
                         if (el.id === id) {
                           return {
